@@ -1,0 +1,184 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DealStatus {
+  active
+  won
+  lost
+}
+
+enum Priority {
+  high
+  medium
+  low
+}
+
+model Member {
+  id          String    @id @default(uuid()) @db.Uuid
+  displayName String    @map("display_name")
+  role        String?
+  email       String?
+  avatarColor String    @map("avatar_color")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  lastSeenAt  DateTime? @map("last_seen_at")
+
+  ledDeals      Deal[]         @relation("DealLead")
+  createdDeals  Deal[]         @relation("DealCreator")
+  assignments   DealAssignee[]
+  stageChanges  StageHistory[]
+  activities    ActivityLog[]
+  notes         Note[]
+  documents     Document[]
+
+  @@map("members")
+}
+
+model Stage {
+  key       String @id
+  label     String
+  shortLabel String @map("short_label")
+  sortOrder Int    @map("sort_order")
+  colorHex  String @map("color_hex")
+
+  deals       Deal[]
+  historyFrom StageHistory[] @relation("FromStage")
+  historyTo   StageHistory[] @relation("ToStage")
+
+  @@map("stages")
+}
+
+model Industry {
+  key   String @id
+  label String
+  deals Deal[]
+
+  @@map("industries")
+}
+
+model Source {
+  key   String @id
+  label String
+  deals Deal[]
+
+  @@map("sources")
+}
+
+model Deal {
+  id                String     @id @default(uuid()) @db.Uuid
+  companyName       String     @map("company_name")
+  legalName         String?    @map("legal_name")
+  website           String?
+  foundedYear       Int?       @map("founded_year")
+  employeeCount     Int?       @map("employee_count")
+  industryKey       String?    @map("industry_key")
+  location          String?
+  description       String?
+  stageKey          String?    @map("stage_key")
+  status            DealStatus @default(active)
+  priority          Priority   @default(medium)
+  revenue           Float?
+  ebitda            Float?
+  askingPrice       Float?     @map("asking_price")
+  askingMultiple    Float?     @map("asking_multiple")
+  sourceKey         String?    @map("source_key")
+  dealLeadId        String?    @map("deal_lead_id") @db.Uuid
+  nextAction        String?    @map("next_action")
+  nextActionDueDate DateTime?  @map("next_action_due_date") @db.Date
+  createdById       String?    @map("created_by") @db.Uuid
+  createdAt         DateTime   @default(now()) @map("created_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
+  closedAt          DateTime?  @map("closed_at")
+  closeReason       String?    @map("close_reason")
+
+  industry     Industry?      @relation(fields: [industryKey], references: [key])
+  stage        Stage?         @relation(fields: [stageKey], references: [key])
+  source       Source?        @relation(fields: [sourceKey], references: [key])
+  dealLead     Member?        @relation("DealLead", fields: [dealLeadId], references: [id], onDelete: SetNull)
+  createdBy    Member?        @relation("DealCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  assignees    DealAssignee[]
+  stageHistory StageHistory[]
+  activities   ActivityLog[]
+  notes        Note[]
+  documents    Document[]
+
+  @@map("deals")
+}
+
+model DealAssignee {
+  dealId   String @map("deal_id") @db.Uuid
+  memberId String @map("member_id") @db.Uuid
+
+  deal   Deal   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@id([dealId, memberId])
+  @@map("deal_assignees")
+}
+
+model StageHistory {
+  id           String   @id @default(uuid()) @db.Uuid
+  dealId       String   @map("deal_id") @db.Uuid
+  fromStageKey String?  @map("from_stage_key")
+  toStageKey   String   @map("to_stage_key")
+  changedById  String?  @map("changed_by") @db.Uuid
+  changedAt    DateTime @default(now()) @map("changed_at")
+
+  deal      Deal    @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  fromStage Stage?  @relation("FromStage", fields: [fromStageKey], references: [key])
+  toStage   Stage   @relation("ToStage", fields: [toStageKey], references: [key])
+  changedBy Member? @relation(fields: [changedById], references: [id], onDelete: SetNull)
+
+  @@index([dealId, changedAt])
+  @@map("stage_history")
+}
+
+model ActivityLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  dealId     String?  @map("deal_id") @db.Uuid
+  memberId   String?  @map("member_id") @db.Uuid
+  actionType String   @map("action_type")
+  actionText String   @map("action_text")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  deal   Deal?   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  member Member? @relation(fields: [memberId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@map("activity_log")
+}
+
+model Note {
+  id        String   @id @default(uuid()) @db.Uuid
+  dealId    String   @map("deal_id") @db.Uuid
+  memberId  String?  @map("member_id") @db.Uuid
+  body      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  deal   Deal    @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  member Member? @relation(fields: [memberId], references: [id], onDelete: SetNull)
+
+  @@map("notes")
+}
+
+model Document {
+  id          String   @id @default(uuid()) @db.Uuid
+  dealId      String?  @map("deal_id") @db.Uuid
+  uploaderId  String?  @map("uploader_id") @db.Uuid
+  fileName    String   @map("file_name")
+  storagePath String?  @map("storage_path")
+  docType     String   @map("doc_type")
+  sizeBytes   Int      @map("size_bytes")
+  uploadedAt  DateTime @default(now()) @map("uploaded_at")
+
+  deal     Deal?   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  uploader Member? @relation(fields: [uploaderId], references: [id], onDelete: SetNull)
+
+  @@map("documents")
+}

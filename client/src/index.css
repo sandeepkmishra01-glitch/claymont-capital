@@ -1,0 +1,86 @@
+@import "tailwindcss";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/lora/500.css";
+@import "@fontsource/lora/600.css";
+@import "@fontsource/lora/700.css";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Lora", ui-serif, Georgia, serif;
+
+  --color-teal-950: #0f2f2f;
+  --color-teal-900: #143d3d;
+  --color-teal-800: #1a4d4d;
+  --color-teal-700: #1f5a5c;
+  --color-teal-600: #236363;
+  --color-teal-500: #2d7a7a;
+  --color-teal-100: #e3eeee;
+  --color-teal-50: #f0f6f6;
+
+  --color-cream: #faf6ee;
+  --color-card: #ffffff;
+  --color-line: #e7e2d6;
+  --color-ink: #2b2b28;
+  --color-muted: #6b6a63;
+  --color-faint: #9a988f;
+
+  --color-amber-accent: #b8733a;
+  --color-amber-soft: #f6ead9;
+  --color-gold: #d8a15f;
+
+  --color-good: #2f8a57;
+  --color-bad: #c0392b;
+}
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-cream font-sans text-ink antialiased;
+  }
+  h1, h2, h3 {
+    @apply font-serif text-teal-800;
+  }
+  button:not(:disabled), [role="button"] {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-teal-500);
+    outline-offset: 2px;
+  }
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50;
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-line bg-card shadow-[0_1px_2px_rgba(20,40,40,0.04)];
+  }
+  .btn-primary {
+    @apply btn bg-teal-600 text-white hover:bg-teal-700;
+  }
+  .btn-accent {
+    @apply btn bg-amber-accent text-white hover:brightness-95;
+  }
+  .btn-secondary {
+    @apply btn border border-line bg-white text-teal-800 hover:bg-teal-50;
+  }
+  .btn-danger {
+    @apply btn border border-red-200 bg-white text-bad hover:bg-red-50;
+  }
+  .input {
+    @apply w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-faint focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100;
+  }
+  .label {
+    @apply mb-1 block text-xs font-semibold tracking-wide text-muted uppercase;
+  }
+  .eyebrow {
+    @apply text-xs font-semibold tracking-[0.08em] text-muted uppercase;
+  }
+}
