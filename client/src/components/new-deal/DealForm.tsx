@@ -13,7 +13,7 @@ type Fields = {
 
 const toStr = (n: number | null | undefined, scale = 1) => (n == null ? '' : String(+(n / scale).toFixed(3)));
 
-function initialFields(deal: Deal | undefined, meId: string): Fields {
+function initialFields(deal: Partial<Deal> | undefined, meId: string): Fields {
   return {
     companyName: deal?.companyName ?? '',
     legalName: deal?.legalName ?? '',
@@ -103,17 +103,19 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 interface Props {
   deal?: Deal;
+  prefill?: DealInput;
+  notice?: ReactNode;
   submitLabel: string;
   busy: boolean;
   onSubmit: (input: DealInput) => void;
   onCancel: () => void;
 }
 
-export function DealForm({ deal, submitLabel, busy, onSubmit, onCancel }: Props) {
+export function DealForm({ deal, prefill, notice, submitLabel, busy, onSubmit, onCancel }: Props) {
   const me = useMe();
   const { stages, industries, sources } = useLookups();
   const members = useMembers();
-  const [f, setF] = useState<Fields>(() => initialFields(deal, me.id));
+  const [f, setF] = useState<Fields>(() => initialFields(deal || prefill ? { ...deal, ...prefill } : undefined, me.id));
   const [errors, setErrors] = useState<Partial<Record<keyof Fields, string>>>({});
   const set = <K extends keyof Fields>(k: K, v: Fields[K]) => setF((prev) => ({ ...prev, [k]: v }));
 
@@ -131,6 +133,7 @@ export function DealForm({ deal, submitLabel, busy, onSubmit, onCancel }: Props)
 
   return (
     <form onSubmit={submit} className="space-y-8" noValidate>
+      {notice}
       <Section title="Company">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Company name *" error={errors.companyName} className="sm:col-span-2">

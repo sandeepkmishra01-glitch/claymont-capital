@@ -12,6 +12,7 @@ import { notesRouter } from './routes/notes.js';
 import { activityRouter } from './routes/activity.js';
 import { documentsRouter } from './routes/documents.js';
 import { backupRouter } from './routes/backup.js';
+import { aiRouter } from './routes/ai.js';
 
 const app = express();
 app.use(express.json({ limit: '20mb' }));
@@ -28,6 +29,7 @@ api.use('/deals', dealsRouter);
 api.use('/notes', notesRouter);
 api.use('/documents', documentsRouter);
 api.use('/workspace', backupRouter);
+api.use('/ai', aiRouter);
 api.use(activityRouter);
 app.use('/api', api);
 app.use('/api', (_req, res) => {

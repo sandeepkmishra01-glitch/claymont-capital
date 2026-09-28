@@ -8,7 +8,7 @@ import { useToast } from '../../context/ToastContext';
 import { AvatarStack } from '../shared/Avatar';
 import { PriorityBadge } from '../shared/Badges';
 
-export function OverviewTab({ deal }: { deal: Deal }) {
+export function OverviewTab({ deal, onAutoFill }: { deal: Deal; onAutoFill: () => void }) {
   const { stages, stageByKey, industryLabel, sourceLabel } = useLookups();
   const members = useMembers();
   const update = useUpdateDeal();
@@ -82,16 +82,16 @@ export function OverviewTab({ deal }: { deal: Deal }) {
         </section>
       )}
 
-      <div
-        className="flex items-start gap-3 rounded-xl border border-dashed border-teal-500/40 bg-teal-50/50 p-4 text-sm"
-        title="Coming in a later version"
+      <button
+        onClick={onAutoFill}
+        className="flex w-full items-start gap-3 rounded-xl border border-dashed border-amber-accent/50 bg-amber-soft/60 p-4 text-left text-sm transition-colors hover:bg-amber-soft"
       >
         <Sparkles size={18} className="mt-0.5 shrink-0 text-amber-accent" />
-        <p className="text-muted">
-          <span className="font-semibold text-teal-800">AI auto-fill from a CIM — coming soon.</span>{' '}
-          For now, upload files in the Documents tab and enter figures with Edit.
-        </p>
-      </div>
+        <span className="text-muted">
+          <span className="font-semibold text-teal-800">Upload a CIM or financial model</span> — Claude extracts revenue, EBITDA, industry,
+          asking terms, highlights, and risks for you to review.
+        </span>
+      </button>
 
       <section>
         <h3 className="text-xl font-semibold">Company Profile</h3>

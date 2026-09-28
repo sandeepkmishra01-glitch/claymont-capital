@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom';
-import { Plus, Settings } from 'lucide-react';
+import { Plus, Settings, Sparkles } from 'lucide-react';
+import { AutoFillModal } from '../autofill/AutoFillModal';
 import { NAV } from './nav';
 import { Sidebar, MobileNav } from './Sidebar';
 import { SearchBox } from './SearchBox';
@@ -13,7 +14,10 @@ export function AppShell() {
   const { pathname } = useLocation();
   const page = NAV.find((n) => n.path === pathname) ?? NAV[0]!;
   const me = useMe();
-  const { openDealId, closeDeal, newDealOpen, setNewDealOpen, settingsOpen, setSettingsOpen } = useUi();
+  const {
+    openDealId, closeDeal, newDealDraft, openNewDeal, closeNewDeal,
+    autoFillOpen, setAutoFillOpen, settingsOpen, setSettingsOpen,
+  } = useUi();
 
   return (
     <div className="flex min-h-screen">
@@ -36,7 +40,10 @@ export function AppShell() {
               <button onClick={() => setSettingsOpen(true)} className="btn-secondary h-10 w-10 !p-0" aria-label="Settings">
                 <Settings size={18} />
               </button>
-              <button onClick={() => setNewDealOpen(true)} className="btn-primary h-10">
+              <button onClick={() => setAutoFillOpen(true)} className="btn-accent h-10" title="Auto-fill a deal from a CIM, teaser, or website with Claude">
+                <Sparkles size={16} /> <span className="hidden sm:inline">Auto-Fill</span>
+              </button>
+              <button onClick={() => openNewDeal()} className="btn-primary h-10">
                 <Plus size={16} strokeWidth={2.5} /> New Deal
               </button>
             </div>
@@ -48,7 +55,16 @@ export function AppShell() {
       </div>
       <MobileNav />
       {openDealId && <DealDetailPanel dealId={openDealId} onClose={closeDeal} />}
-      {newDealOpen && <NewDealModal onClose={() => setNewDealOpen(false)} />}
+      {newDealDraft && <NewDealModal draft={newDealDraft === 'blank' ? undefined : newDealDraft} onClose={closeNewDeal} />}
+      {autoFillOpen && (
+        <AutoFillModal
+          onClose={() => setAutoFillOpen(false)}
+          onResult={(result) => {
+            setAutoFillOpen(false);
+            openNewDeal(result);
+          }}
+        />
+      )}
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
     </div>
   );

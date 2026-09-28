@@ -38,7 +38,7 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
     return;
   }
   if (err instanceof multer.MulterError) {
-    res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'File is larger than 25 MB' : err.message });
+    res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'That file is too large' : err.message });
     return;
   }
   console.error(err);

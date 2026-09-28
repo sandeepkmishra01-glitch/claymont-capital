@@ -7,6 +7,11 @@ import type { Deal } from '../../lib/types';
 import { useToast } from '../../context/ToastContext';
 import { Modal, SlideOver } from '../shared/Overlay';
 import { DealForm } from '../new-deal/DealForm';
+import { attachSourceFile } from '../new-deal/NewDealModal';
+import { AutoFillModal } from '../autofill/AutoFillModal';
+import { AiNotice } from '../autofill/AiNotice';
+import type { AutoFillResult } from '../../lib/autofill';
+import { useQueryClient } from '@tanstack/react-query';
 import { OverviewTab } from './OverviewTab';
 import { FinancialsTab } from './FinancialsTab';
 import { DealDocumentsTab } from './DealDocumentsTab';
@@ -20,7 +25,8 @@ export function DealDetailPanel({ dealId, onClose }: { dealId: string; onClose: 
   const deals = useDeals();
   const deal = deals.data?.find((d) => d.id === dealId);
   const [tab, setTab] = useState<Tab>('Overview');
-  const [dialog, setDialog] = useState<'edit' | 'pass' | 'delete' | null>(null);
+  const [dialog, setDialog] = useState<'edit' | 'pass' | 'delete' | 'autofill' | null>(null);
+  const [draft, setDraft] = useState<AutoFillResult | undefined>();
 
   if (!deal) {
     return (
@@ -53,13 +59,23 @@ export function DealDetailPanel({ dealId, onClose }: { dealId: string; onClose: 
         ))}
       </nav>
       <div className="flex-1 px-4 py-6 sm:px-8" role="tabpanel">
-        {tab === 'Overview' && <OverviewTab deal={deal} />}
+        {tab === 'Overview' && <OverviewTab deal={deal} onAutoFill={() => setDialog('autofill')} />}
         {tab === 'Financials' && <FinancialsTab deal={deal} />}
         {tab === 'Documents' && <DealDocumentsTab dealId={deal.id} />}
         {tab === 'Activity' && <ActivityTab dealId={deal.id} />}
         {tab === 'Notes' && <NotesTab dealId={deal.id} />}
       </div>
-      {dialog === 'edit' && <EditDealModal deal={deal} onClose={() => setDialog(null)} />}
+      {dialog === 'edit' && <EditDealModal deal={deal} draft={draft} onClose={() => { setDialog(null); setDraft(undefined); }} />}
+      {dialog === 'autofill' && (
+        <AutoFillModal
+          title={`Auto-fill ${deal.companyName}`}
+          onClose={() => setDialog(null)}
+          onResult={(result) => {
+            setDraft(result);
+            setDialog('edit');
+          }}
+        />
+      )}
       {dialog === 'pass' && <PassDealModal deal={deal} onClose={() => setDialog(null)} />}
       {dialog === 'delete' && <DeleteDealModal deal={deal} onClose={() => setDialog(null)} onDeleted={onClose} />}
     </SlideOver>
@@ -131,18 +147,30 @@ function HeaderButton({ onClick, icon, children, label }: { onClick: () => void;
   );
 }
 
-function EditDealModal({ deal, onClose }: { deal: Deal; onClose: () => void }) {
+function EditDealModal({ deal, draft, onClose }: { deal: Deal; draft?: AutoFillResult; onClose: () => void }) {
   const update = useUpdateDeal();
+  const qc = useQueryClient();
   const toast = useToast();
   return (
-    <Modal title={`Edit ${deal.companyName}`} onClose={onClose} width="lg">
+    <Modal title={draft ? 'Review auto-filled changes' : `Edit ${deal.companyName}`} onClose={onClose} width="lg">
       <DealForm
         deal={deal}
+        prefill={draft?.prefill}
+        notice={draft && <AiNotice result={draft} mode="update" />}
         submitLabel="Save changes"
         busy={update.isPending}
         onCancel={onClose}
         onSubmit={(input) => update.mutate({ id: deal.id, ...input }, {
-          onSuccess: () => { toast('Deal updated'); onClose(); },
+          onSuccess: () => {
+            toast('Deal updated');
+            const file = draft?.file;
+            if (file) {
+              attachSourceFile(file, deal.id)
+                .then(() => Promise.all([qc.invalidateQueries({ queryKey: ['documents'] }), qc.invalidateQueries({ queryKey: ['activity'] })]))
+                .catch((e: Error) => toast(`Changes saved, but attaching ${file.name} failed: ${e.message}`, 'error'));
+            }
+            onClose();
+          },
           onError: (e) => toast(e.message, 'error'),
         })}
       />
